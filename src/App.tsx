@@ -9,13 +9,23 @@ import {
   History, 
   LayoutDashboard, 
   ArrowRight, 
-  ArrowLeft,
-  CheckCircle2,
-  AlertTriangle,
-  Plus
+  ArrowLeft, 
+  CheckCircle2, 
+  AlertTriangle, 
+  Plus,
+  Radio,
+  Timer
 } from 'lucide-react';
-import { TrackMap } from './components/TrackMap';
-import type { TelemetryData, ScheduleItem, LogEntry } from './types';
+import { TrackMap } from '@/components/TrackMap';
+import type { TelemetryData, ScheduleItem, LogEntry } from '@/types';
+
+// shadcn UI Components
+import { Button } from '@/components/ui/button';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 export function App() {
   const [activeTab, setActiveTab] = useState<'cockpit' | 'schedule' | 'logs'>('cockpit');
@@ -123,7 +133,6 @@ export function App() {
           };
         }
 
-        // Determine current segment name
         let segment = 'Segmen 1 (Utara)';
         if (nextMeter > 20 && nextMeter <= 40) segment = 'Segmen 2 (Timur)';
         else if (nextMeter > 40 && nextMeter <= 60) segment = 'Segmen 3 (Selatan)';
@@ -209,72 +218,77 @@ export function App() {
   };
 
   return (
-    <div className="flex justify-center min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="flex justify-center min-h-screen bg-background text-foreground font-sans">
       {/* Mobile Frame Container (Max-width 440px for ideal Mobile / PWA View) */}
-      <div className="w-full max-w-[440px] min-h-screen bg-[#070b14] flex flex-col border-x border-slate-900 pb-24 shadow-2xl relative">
+      <div className="w-full max-w-[440px] min-h-screen bg-card/20 flex flex-col border-x border-border pb-24 shadow-2xl relative">
         
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-[#070b14]/90 backdrop-blur-md px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-teal-600 flex items-center justify-center font-black text-white text-sm shadow">
-              AF
+        <header className="sticky top-0 z-30 bg-background/80 backdrop-blur-md px-4 py-3 border-b border-border flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="size-9 rounded-xl bg-primary flex items-center justify-center font-bold text-primary-foreground shadow-sm">
+              <Radio className="size-4" />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-                AquaFeed-360
-                <span className="text-[10px] font-normal px-1.5 py-0.2 rounded bg-slate-800 text-slate-400">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-sm font-bold tracking-tight text-foreground">
+                  AquaFeed-360
+                </h1>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                   Kolam A
-                </span>
-              </h1>
-              <p className="text-[11px] text-slate-400">Rail Feeder Robot • IoT</p>
+                </Badge>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Rail Feeder Robot • IoT</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-full border border-slate-800 text-xs">
-              <span className={`w-2 h-2 rounded-full ${telemetry.deviceOnline ? 'bg-emerald-400' : 'bg-red-500'}`} />
-              <span className="text-[11px] font-mono text-slate-300">
-                {telemetry.deviceOnline ? 'ONLINE' : 'OFFLINE'}
-              </span>
-            </div>
-          </div>
+          <Badge variant={telemetry.deviceOnline ? 'default' : 'destructive'} className="gap-1.5 py-1 px-2.5">
+            <span className={`size-1.5 rounded-full ${telemetry.deviceOnline ? 'bg-primary-foreground animate-pulse' : 'bg-white'}`} />
+            <span className="text-[10px] font-mono tracking-wider">
+              {telemetry.deviceOnline ? 'ONLINE' : 'OFFLINE'}
+            </span>
+          </Badge>
         </header>
 
-        {/* Tab Content */}
-        <main className="flex-1 p-4 space-y-4">
-          
-          {/* TAB 1: COCKPIT */}
-          {activeTab === 'cockpit' && (
-            <>
-              {/* Status Header Banner */}
-              <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between">
-                <div>
-                  <span className="text-[11px] font-mono text-slate-400 block mb-0.5">STATUS KERETA REL</span>
-                  <div className="flex items-center gap-2">
-                    <span className={`font-bold text-sm ${
-                      telemetry.status === 'ESTOP' ? 'text-red-400' : 
-                      telemetry.status === 'FEEDING' ? 'text-sky-400' : 'text-teal-400'
-                    }`}>
-                      {telemetry.status === 'ESTOP' && 'DARURAT BERHENTI (E-STOP)'}
-                      {telemetry.status === 'FEEDING' && 'SEDANG MENABUR PAKAN'}
-                      {telemetry.status === 'PATROLLING' && 'MENYUSURI REL'}
-                      {telemetry.status === 'IDLE' && 'SIAP DI DOCKING'}
+        {/* Tab Content wrapped in shadcn Tabs */}
+        <Tabs value={activeTab} onValueChange={(val: string) => setActiveTab(val as 'cockpit' | 'schedule' | 'logs')} className="flex-1 flex flex-col">
+          <main className="flex-1 p-4 flex flex-col gap-4">
+            
+            {/* TAB 1: COCKPIT */}
+            <TabsContent value="cockpit" className="flex flex-col gap-4 mt-0">
+              
+              {/* Status Header Card */}
+              <Card className="border-border bg-card/70 backdrop-blur-sm shadow-sm">
+                <CardContent className="p-3.5 flex items-center justify-between">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+                      Status Kereta Rel
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className={`font-bold text-sm tracking-tight ${
+                        telemetry.status === 'ESTOP' ? 'text-destructive font-black' : 
+                        telemetry.status === 'FEEDING' ? 'text-sky-400' : 'text-primary'
+                      }`}>
+                        {telemetry.status === 'ESTOP' && 'DARURAT BERHENTI (E-STOP)'}
+                        {telemetry.status === 'FEEDING' && 'SEDANG MENABUR PAKAN'}
+                        {telemetry.status === 'PATROLLING' && 'MENYUSURI REL'}
+                        {telemetry.status === 'IDLE' && 'SIAP DI DOCKING'}
+                      </span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      Lokasi: <strong className="text-foreground font-medium">{telemetry.currentSegment}</strong>
                     </span>
                   </div>
-                  <span className="text-xs text-slate-400 block mt-1">
-                    Lokasi: <span className="text-slate-200 font-medium">{telemetry.currentSegment}</span>
-                  </span>
-                </div>
 
-                <div className="text-right">
-                  <span className="text-[11px] font-mono text-slate-400 block">KEC. LINTASAN</span>
-                  <span className="text-base font-bold font-mono text-slate-200">
-                    {telemetry.speedMps.toFixed(1)} <span className="text-xs text-slate-400">m/s</span>
-                  </span>
-                </div>
-              </div>
+                  <div className="text-right flex flex-col items-end">
+                    <span className="text-[11px] font-mono text-muted-foreground">KECEPATAN</span>
+                    <span className="text-base font-bold font-mono text-foreground">
+                      {telemetry.speedMps.toFixed(1)} <span className="text-xs text-muted-foreground font-normal">m/s</span>
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
 
-              {/* 2D Interactive Track Map */}
+              {/* 2D Interactive Track Map Component */}
               <TrackMap 
                 currentMeters={telemetry.currentPositionMeter}
                 totalMeters={telemetry.totalTrackMeters}
@@ -282,233 +296,217 @@ export function App() {
                 hasObstacle={telemetry.isObstacleDetected}
               />
 
-              {/* Metric Cards (Hopper & Battery) */}
+              {/* Metric Cards (Hopper & Battery) using shadcn Card & Progress */}
               <div className="grid grid-cols-2 gap-3">
                 {/* Hopper Tank Card */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-slate-400 mb-1">
-                    <span className="text-[11px] font-mono">TANGKI PAKAN</span>
-                    <Wheat className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div>
-                    <span className="text-2xl font-black text-white font-mono">
-                      {telemetry.hopperRemainingKg.toFixed(1)}
-                    </span>
-                    <span className="text-xs text-slate-400 ml-1">/ 20 Kg</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div 
-                      className="bg-amber-400 h-full rounded-full transition-all"
-                      style={{ width: `${(telemetry.hopperRemainingKg / telemetry.hopperMaxKg) * 100}%` }}
+                <Card className="border-border bg-card/70">
+                  <CardHeader className="p-3.5 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[11px] font-mono font-medium text-muted-foreground">
+                      TANGKI PAKAN
+                    </CardTitle>
+                    <Wheat className="size-4 text-amber-500" />
+                  </CardHeader>
+                  <CardContent className="p-3.5 pt-0 flex flex-col gap-1.5">
+                    <div>
+                      <span className="text-2xl font-black font-mono text-foreground">
+                        {telemetry.hopperRemainingKg.toFixed(1)}
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">/ 20 Kg</span>
+                    </div>
+                    <Progress 
+                      value={(telemetry.hopperRemainingKg / telemetry.hopperMaxKg) * 100} 
+                      className="h-1.5 bg-muted"
                     />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
 
                 {/* Battery Card */}
-                <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-3.5 flex flex-col justify-between">
-                  <div className="flex items-center justify-between text-slate-400 mb-1">
-                    <span className="text-[11px] font-mono">DAYA BATERAI</span>
-                    <Battery className="w-4 h-4 text-emerald-400" />
-                  </div>
-                  <div>
-                    <span className="text-2xl font-black text-white font-mono">
-                      {telemetry.batteryPercent}%
-                    </span>
-                    <span className="text-xs text-slate-400 ml-1">({telemetry.batteryVoltage}V)</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-1.5 rounded-full mt-2 overflow-hidden">
-                    <div 
-                      className="bg-emerald-400 h-full rounded-full transition-all"
-                      style={{ width: `${telemetry.batteryPercent}%` }}
+                <Card className="border-border bg-card/70">
+                  <CardHeader className="p-3.5 pb-1 flex flex-row items-center justify-between space-y-0">
+                    <CardTitle className="text-[11px] font-mono font-medium text-muted-foreground">
+                      DAYA BATERAI
+                    </CardTitle>
+                    <Battery className="size-4 text-emerald-500" />
+                  </CardHeader>
+                  <CardContent className="p-3.5 pt-0 flex flex-col gap-1.5">
+                    <div>
+                      <span className="text-2xl font-black font-mono text-foreground">
+                        {telemetry.batteryPercent}%
+                      </span>
+                      <span className="text-xs text-muted-foreground ml-1">({telemetry.batteryVoltage}V)</span>
+                    </div>
+                    <Progress 
+                      value={telemetry.batteryPercent} 
+                      className="h-1.5 bg-muted"
                     />
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Emergency E-Stop Button (High-Contrast, Touch Target > 54px) */}
               <div>
-                <button
+                <Button
                   onClick={handleEmergencyStop}
-                  className="w-full py-4 px-4 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-bold rounded-2xl shadow-lg border border-red-500/50 flex items-center justify-center gap-2 text-base transition"
+                  variant="destructive"
+                  size="lg"
+                  className="w-full h-14 font-black rounded-2xl shadow-lg border border-destructive/50 flex items-center justify-center gap-2 text-sm tracking-wide active:scale-[0.98]"
                 >
-                  <OctagonAlert className="w-5 h-5" />
+                  <OctagonAlert className="size-5" />
                   EMERGENCY STOP (BERHENTI SEKETIKA)
-                </button>
+                </Button>
               </div>
 
               {/* Main Feed Trigger & Jogging Controls */}
-              <div className="space-y-2 pt-1">
-                <span className="text-[11px] font-mono text-slate-400 uppercase tracking-wider block">
-                  KENDALI CEPAT OPERATOR
+              <div className="flex flex-col gap-2 pt-1">
+                <span className="text-[11px] font-mono text-muted-foreground uppercase tracking-wider">
+                  Kendali Cepat Operator
                 </span>
 
-                <button
+                <Button
                   onClick={handleStartFeeding}
                   disabled={telemetry.status === 'FEEDING'}
-                  className={`w-full py-3.5 px-4 font-bold rounded-xl flex items-center justify-center gap-2 transition text-sm ${
-                    telemetry.status === 'FEEDING' 
-                      ? 'bg-slate-800 text-slate-500 cursor-not-allowed'
-                      : 'bg-teal-500 hover:bg-teal-600 text-slate-950 shadow-md'
-                  }`}
+                  size="lg"
+                  className="w-full h-12 font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm text-sm"
                 >
-                  <Play className="w-4 h-4 fill-current" />
+                  <Play className="size-4 fill-current" />
                   {telemetry.status === 'FEEDING' ? 'PROSES MENABUR SEDANG BERJALAN...' : 'SEBAR PAKAN SEKARANG (1 PUTARAN)'}
-                </button>
+                </Button>
 
                 <div className="grid grid-cols-2 gap-2">
-                  <button
+                  <Button
                     onClick={() => handleManualJog('backward')}
-                    className="py-3 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5"
+                    variant="outline"
+                    className="h-11 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
                   >
-                    <ArrowLeft className="w-4 h-4" /> MUNDUR (JOG -2M)
-                  </button>
+                    <ArrowLeft className="size-4" /> MUNDUR (-2M)
+                  </Button>
 
-                  <button
+                  <Button
                     onClick={() => handleManualJog('forward')}
-                    className="py-3 px-3 bg-slate-900 hover:bg-slate-800 active:bg-slate-700 border border-slate-800 rounded-xl text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5"
+                    variant="outline"
+                    className="h-11 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
                   >
-                    MAJU (JOG +2M) <ArrowRight className="w-4 h-4" />
-                  </button>
+                    MAJU (+2M) <ArrowRight className="size-4" />
+                  </Button>
                 </div>
 
-                <button
+                <Button
                   onClick={handleReturnToDock}
-                  className="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 border border-slate-800/80 rounded-xl text-xs font-medium text-slate-400 flex items-center justify-center gap-1.5"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground text-xs font-medium flex items-center justify-center gap-1.5"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" /> Reset Posisi ke Docking Station
-                </button>
+                  <RotateCcw className="size-3.5" /> Reset Posisi ke Docking Station
+                </Button>
               </div>
-            </>
-          )}
+            </TabsContent>
 
-          {/* TAB 2: SCHEDULE */}
-          {activeTab === 'schedule' && (
-            <div className="space-y-3">
+            {/* TAB 2: SCHEDULE */}
+            <TabsContent value="schedule" className="flex flex-col gap-3 mt-0">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-sm font-bold text-white">Jadwal Pemberian Pakan</h2>
-                  <p className="text-xs text-slate-400">Total target hari ini: 8.0 Kg</p>
+                  <h2 className="text-sm font-bold text-foreground">Jadwal Pemberian Pakan</h2>
+                  <p className="text-xs text-muted-foreground">Total target hari ini: 8.0 Kg</p>
                 </div>
-                <button className="px-3 py-1.5 bg-teal-500 hover:bg-teal-600 text-slate-950 font-bold rounded-lg text-xs flex items-center gap-1">
-                  <Plus className="w-3.5 h-3.5" /> Tambah
-                </button>
+                <Button size="sm" className="h-8 gap-1.5 text-xs font-bold">
+                  <Plus className="size-3.5" /> Tambah
+                </Button>
               </div>
 
-              <div className="space-y-2.5 pt-2">
+              <div className="flex flex-col gap-2.5 pt-1">
                 {schedules.map((item) => (
-                  <div 
-                    key={item.id} 
-                    className="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex items-center justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono font-bold text-base text-white">{item.time}</span>
-                        <span className="text-xs font-medium text-slate-300">{item.name}</span>
+                  <Card key={item.id} className="border-border bg-card/70 shadow-sm">
+                    <CardContent className="p-3.5 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-base text-foreground">{item.time}</span>
+                          <span className="text-xs font-medium text-muted-foreground">{item.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-mono">
+                          <span>Dosis: <strong className="text-foreground">{item.dosageKg} Kg</strong></span>
+                          <span>Putaran: <strong className="text-foreground">{item.loops}x</strong></span>
+                          <Badge variant="outline" className="text-[10px] uppercase font-mono py-0">
+                            {item.speed}
+                          </Badge>
+                        </div>
+                        {item.lastRunTime && (
+                          <div className="flex items-center gap-1 text-[11px] text-muted-foreground mt-0.5">
+                            <Timer className="size-3 text-primary" />
+                            <span>Terakhir: {item.lastRunTime}</span>
+                          </div>
+                        )}
                       </div>
-                      <div className="flex items-center gap-3 text-xs text-slate-400 mt-1 font-mono">
-                        <span>Dosis: <strong className="text-slate-200">{item.dosageKg} Kg</strong></span>
-                        <span>Putaran: <strong className="text-slate-200">{item.loops}x</strong></span>
-                        <span className="capitalize text-teal-400">{item.speed}</span>
-                      </div>
-                      {item.lastRunTime && (
-                        <span className="text-[11px] text-slate-500 mt-1 block">
-                          Terakhir: {item.lastRunTime}
-                        </span>
-                      )}
-                    </div>
 
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => toggleSchedule(item.id)}
-                        className={`w-11 h-6 flex items-center rounded-full p-1 transition duration-300 ${
-                          item.isActive ? 'bg-teal-500 justify-end' : 'bg-slate-800 justify-start'
-                        }`}
-                      >
-                        <div className="bg-white w-4 h-4 rounded-full shadow-md transform" />
-                      </button>
-                    </div>
-                  </div>
+                      <Switch 
+                        checked={item.isActive}
+                        onCheckedChange={() => toggleSchedule(item.id)}
+                      />
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-          {/* TAB 3: LOGS & HISTORY */}
-          {activeTab === 'logs' && (
-            <div className="space-y-3">
+            {/* TAB 3: LOGS & HISTORY */}
+            <TabsContent value="logs" className="flex flex-col gap-3 mt-0">
               <div>
-                <h2 className="text-sm font-bold text-white">Log Operasional Rel & Pakan</h2>
-                <p className="text-xs text-slate-400">Telemetri sensor & riwayat eksekusi</p>
+                <h2 className="text-sm font-bold text-foreground">Log Operasional Rel & Pakan</h2>
+                <p className="text-xs text-muted-foreground">Telemetri sensor & riwayat eksekusi</p>
               </div>
 
-              <div className="space-y-2 pt-2">
+              <div className="flex flex-col gap-2 pt-1">
                 {logs.map((log) => (
-                  <div 
-                    key={log.id} 
-                    className="bg-slate-900/80 border border-slate-800 rounded-xl p-3 text-xs space-y-1"
-                  >
-                    <div className="flex items-center justify-between text-slate-400">
-                      <div className="flex items-center gap-1.5 font-medium">
-                        {log.type === 'ERROR' && <AlertTriangle className="w-3.5 h-3.5 text-red-400" />}
-                        {log.type === 'WARN' && <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />}
-                        {log.type === 'INFO' && <CheckCircle2 className="w-3.5 h-3.5 text-teal-400" />}
-                        {log.type === 'FEED' && <Wheat className="w-3.5 h-3.5 text-sky-400" />}
-                        <span className={
-                          log.type === 'ERROR' ? 'text-red-400 font-bold' :
-                          log.type === 'WARN' ? 'text-amber-400 font-bold' : 'text-slate-300'
-                        }>
-                          {log.type}
-                        </span>
+                  <Card key={log.id} className="border-border bg-card/60 shadow-sm">
+                    <CardContent className="p-3 flex flex-col gap-1 text-xs">
+                      <div className="flex items-center justify-between text-muted-foreground">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          {log.type === 'ERROR' && <AlertTriangle className="size-3.5 text-destructive" />}
+                          {log.type === 'WARN' && <AlertTriangle className="size-3.5 text-amber-500" />}
+                          {log.type === 'INFO' && <CheckCircle2 className="size-3.5 text-primary" />}
+                          {log.type === 'FEED' && <Wheat className="size-3.5 text-sky-400" />}
+                          <span className={
+                            log.type === 'ERROR' ? 'text-destructive font-bold' :
+                            log.type === 'WARN' ? 'text-amber-500 font-bold' : 'text-foreground'
+                          }>
+                            {log.type}
+                          </span>
+                        </div>
+                        <span className="font-mono text-[10px] text-muted-foreground">{log.timestamp}</span>
                       </div>
-                      <span className="font-mono text-[10px] text-slate-500">{log.timestamp}</span>
-                    </div>
-                    <p className="text-slate-200 font-medium">{log.message}</p>
-                    {log.details && (
-                      <p className="text-[11px] text-slate-400 font-mono">{log.details}</p>
-                    )}
-                  </div>
+                      <p className="text-foreground font-medium">{log.message}</p>
+                      {log.details && (
+                        <p className="text-[11px] text-muted-foreground font-mono">{log.details}</p>
+                      )}
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
-            </div>
-          )}
+            </TabsContent>
 
-        </main>
+          </main>
 
-        {/* Bottom PWA Navigation Bar */}
-        <nav className="fixed bottom-0 max-w-[440px] w-full bg-[#070b14]/95 backdrop-blur-lg border-t border-slate-800/90 py-2.5 px-6 flex items-center justify-around z-40">
-          <button 
-            onClick={() => setActiveTab('cockpit')}
-            className={`flex flex-col items-center gap-1 transition ${
-              activeTab === 'cockpit' ? 'text-teal-400 font-bold' : 'text-slate-500'
-            }`}
-          >
-            <LayoutDashboard className="w-5 h-5" />
-            <span className="text-[10px]">Cockpit</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('schedule')}
-            className={`flex flex-col items-center gap-1 transition ${
-              activeTab === 'schedule' ? 'text-teal-400 font-bold' : 'text-slate-500'
-            }`}
-          >
-            <Calendar className="w-5 h-5" />
-            <span className="text-[10px]">Jadwal</span>
-          </button>
-
-          <button 
-            onClick={() => setActiveTab('logs')}
-            className={`flex flex-col items-center gap-1 transition ${
-              activeTab === 'logs' ? 'text-teal-400 font-bold' : 'text-slate-500'
-            }`}
-          >
-            <History className="w-5 h-5" />
-            <span className="text-[10px]">Riwayat</span>
-          </button>
-        </nav>
+          {/* Bottom PWA Navigation Bar using shadcn TabsList */}
+          <nav className="fixed bottom-0 max-w-[440px] w-full bg-background/95 backdrop-blur-lg border-t border-border py-2 px-6 flex items-center justify-center z-40">
+            <TabsList className="grid grid-cols-3 w-full bg-muted/60 p-1 rounded-xl h-12">
+              <TabsTrigger value="cockpit" className="flex items-center gap-1.5 text-xs font-semibold py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <LayoutDashboard className="size-4" />
+                <span>Cockpit</span>
+              </TabsTrigger>
+              <TabsTrigger value="schedule" className="flex items-center gap-1.5 text-xs font-semibold py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <Calendar className="size-4" />
+                <span>Jadwal</span>
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="flex items-center gap-1.5 text-xs font-semibold py-1.5 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                <History className="size-4" />
+                <span>Riwayat</span>
+              </TabsTrigger>
+            </TabsList>
+          </nav>
+        </Tabs>
 
       </div>
     </div>
   );
 }
+
 export default App;
